@@ -1,157 +1,229 @@
+decode 아이템 수정 진행중
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 char input_txt[50];
 char output_txt[50];
-char buffer[10][256];
 
-char compare[256];
-int count = 0;
+char line[1005];
+char buffer[12][2000];
+char str_buf[1001][1001]; // 1줄에 1글자씩 1000자 || 1줄에 1000자
 
-typedef struct{
-    char id[256];
-    char name[256];
-    char gender[7]; // FEMALE, MALE
-    char age[3]; // 0-99
-    char hp[4]; // 0-255
-    char mp[4]; // 0-255
-    char coin[6]; // 0-65535
-}User;
+int str_arr_num = 0;
+int system_stat = 0;
+
 typedef struct{
     char name[256]; // 무기 이름
     char data[256]; // 무기 개수
 }Item;
-// '/'문자 이전의 문자열 return
-// 9개 반복되므로 9번 scan
-char* separation(FILE *read){
-    for(int i=0; i<9; i++)
-        fscanf(read, "%[^\n//]//",buffer[i]);
-    /*
-        문자열 9개를 비교해서
-        가장 많이 나온 문자가 올바른 문자이므로
-        그 문자를 리턴하는 코드
-    */
-    return buffer[8];
-}
-void sep_item(Item *item,FILE *read,FILE *write){
 
-}
-Item item_status(Item *item, FILE *read,FILE *write){
-    // 구조체 item에는
-    // 무기 이름과 무기 개수가 포함되어있다.
-    for(int i=0; i<9; i++){
-        fscanf(read, "%[^\n//]//",item[i].name); // 무기 이름
-        if( strcmp(item[i].name, "F") == 0 ){ // 이름이 같으면
-            fprintf(write,"\n*FRIENDS LIST*\n");
-            /*
+void user_info(char* user[]){ // 유저 상태 초기화
+    user[0] = "ID";
+    user[1] = "NAME";
+    user[2] = "GENDER";
+     user[3] = "AGE";
+     user[4] = "HP";
+     user[5] = "MP";
+     user[6] = "COIN";
+ }
+ void friend_info(char* friend[]){ // 유저 상태 초기화
+     friend[0] = "ID";
+     friend[1] = "NAME";
+     friend[2] = "GENDER";
+     friend[3] = "AGE";
+ }
+ char* separate(char str[2000]){
+     for(int i=0; i<9; i++)
+         sscanf(str, "%[^\n/]/",buffer[i]);
+     //for(int i=0; i<12; i++)
+     //  printf("%s",buffer[i]);
+     //printf("\n");
+     /*
+         문자열 9개를 비교해서
+         가장 많이 나온 문자가 올바른 문자이므로
+         그 문자를 리턴하는 코드
+     */
+     //printf("%ld\n",strlen(str));
+     return buffer[8];
+ }
+ void item_status(Item *item,char str[2000]){
+     char token1[10];
+     char token2[10];
+     int index = 0;
 
-            */
-            count=6;
-            return item[8];
-        }
+     int i=0;
+     while( sscanf(str+i, "%[^/]/%[^/]/",item[index].name,item[index].data) == 2 ){
+         i += strlen(token1) + strlen(token2) + 2; // 다음 토큰의 시작 위치, / 두개이므로 +2
+         index++;
+     }
+     /*
+         아이템 문자열 9개와 아이템 숫자 9를 비교해서
+         가장 많이 나온 문자가 올바른 문자이므로
+         그 구조체를 리턴하는 코드
+     */
+ }
+ void add_str_arr(char str[2000]){
+     int len = strlen(str); // 문자열의 길이
 
-        fscanf(read, "%[^\n//]//",item[i].data); // 무기 개수
+     int i;
+     for(i = 1; i < len; i++){ // /로 시작할 때 한글자씩 앞으로 shift
+         str[i-1] = str[i];
+     }
+     str[len-1] = '\0'; // 문자열의 끝
+     strcpy(str_buf[str_arr_num],str); // 버퍼에 문자열 저장
+     str_arr_num = (str_arr_num+1) % 9; // 0-8번까지만
+ }
+ void run(FILE *read, FILE *write){
+     char *user[2000]; // 유저 상태 기록
+     Item item[9]; // 아이템 상태 기록
+     char *friend[2000]; // 친구 상태 기록
 
-    }
-    /*
-        아이템 문자열 9개와 아이템 숫자 9를 비교해서
-        가장 많이 나온 문자가 올바른 문자이므로
-        그 구조체를 리턴하는 코드
-    */
-    return item[8];
-}
-void save_item_status(Item *item, FILE *write){
-    fprintf(write, "%s: %s\n",item->name,item->data);
-}
-void user_status(User *user, FILE *read){
-    strcpy(user->id,separation(read));
-    strcpy(user->name,separation(read));
-    strcpy(user->gender,separation(read));
-    strcpy(user->age,separation(read));
-    strcpy(user->hp,separation(read));
-    strcpy(user->mp,separation(read));
-    strcpy(user->coin,separation(read));
-}
-void save_user_status(User *user, FILE *write){
-    fprintf(write, "ID: %s\n",user->id);
-    fprintf(write, "NAME: %s\n",user->name);
-    fprintf(write, "GENDER: %s\n",user->gender);
-    fprintf(write, "AGE: %s\n",user->age);
-    fprintf(write, "HP: %s\n",user->hp);
-    fprintf(write, "MP: %s\n",user->mp);
-    fprintf(write, "COIN: %s\n",user->coin);
-}
-void run(FILE *read, FILE *write){
-    User user;
-    Item item[9];
-    Item i;
-    if (read == NULL || write == NULL){
-        printf("파일을 열 수 없습니다.\n");
-        exit(0);
-    }
-    //fscanf(fp, "%[^\n]//",buffer);
+     char conversion[2000]; // 변환된 문자열
+     char description[1001]; // desc 문자열
 
-    while(1){
-        strcpy(compare,separation(read));
-        printf("%s\n",compare);
-        if( strcmp(compare, "U") == 0 ){
-            fprintf(write,"*USER STATUS*\n");
+     int user_menu = 0; // 유저 메뉴 수
+     int friend_num = 0; // 친구 수
+     int friend_menu = 0; // 친구 메뉴 수
+     int num = 0;
 
-            user_status(&user,read); // 유저 정보 저장
-            save_user_status(&user,write); // 파일에 유저 정보 저장
-            continue;
-        }
-        else if( strcmp(compare, "I") == 0 ){
-            fprintf(write,"\n*ITEMS*\n");
+     int error_count = 0; // 아이템 구조체의 오류 개수
+     char error_str[256]; // 오류 발생 시 반복되는 문자열
+     char error_data[256]; // 오류 발생 시 반복되는 데이터
 
-            while( count < 4){
-                i = item_status(item,read,write);
-                save_item_status(item,write);
-                count++;
-            }
-            continue;
-        }
-        else if( strcmp(compare, "F") == 0 || count == 6){
-            fprintf(write,"\n*FRIENDS LIST*\n");
-            break;
-        }
-        else if( strcmp(compare, "D") == 0 ){
-            fprintf(write,"\n*DESCRIPTION*\n");
-            break;
-        }
 
-    }
+     if (read == NULL || write == NULL){
+         printf("파일을 열 수 없습니다.\n");
+         exit(0);
+     }
+     user_info(user); // 유저 상태 배열에 기록 (ID: NAME: 등)
+     friend_info(friend); // 친구 상태 배열에 기록 (ID: NAME: 등)
 
-}
-int main(int argc, char* argv[]){
-    // putty에서 ./decoder.out encoded_data1.modified result1.txt 이런식으로 입력하면
-    // argv[1] = encoded_data1.modified
-    // argv[2] = result1.txt
-    // 로 해당 배열에 값이 들어가게 된다.
-    // 각각 input_txt, output_text 문자열로 저장
-    strcpy(input_txt, argv[1]);
-    strcpy(output_txt, argv[2]);
-    printf("[input file]: %s\n", input_txt);
-    printf("[output file]: %s\n", output_txt);
+      // 9개의 문자열을 저장하기 위한 배열
+     char str_buffer[9][256];
+     int str_count = 0; // 현재까지 읽은 문자열의 개수
 
-    // input_txt는 읽기 모드(mode: r)
-    FILE* fp_input = fopen(input_txt, "r");
-    if (fp_input == NULL){
-        printf("%s 을(를) 열 수 없습니다. 디코딩을 종료합니다.\n", input_txt);
-        exit(0);
-    }
-    // output_txt는 쓰기 모드(mode: w)
-    FILE* fp_output = fopen(output_txt, "w");
-    if (fp_output == NULL){
-        printf("%s 을(를) 열 수 없습니다. 디코딩을 종료합니다.\n", output_txt);
-        exit(0);
-    }
+     while (fgets(line, sizeof(line), read)){ // 한줄을 리턴
+         //printf("%s",line);
+         strcpy(conversion, separate(line)); // 변환된 문자열 옮겨담기
+         switch(system_stat){
+             case 0:
+                 if( strcmp(conversion, "U") == 0 ){ // 문자열이 "U(User)"라면
+                     fprintf(write,"*USER STATUS*\n"); // 파일에 입력
+                     system_stat = 1; // 다음 case로
+                 }
+                 break;
+             case 1:
+                 if( strcmp(conversion, "I") == 0 ){ // 문자열이 "I(Item)"라면
+                     fprintf(write,"\n*ITEMS*\n");
+                     system_stat = 2; // 다음 case로
+                 }
+                 else{
+                     if(user_menu < 7){
+                         fprintf(write,"%s: %s\n",user[user_menu],conversion); // 파일에 입력
+                         user_menu++; // 메뉴 개수만큼
+                     }
+                 }
+                 break;
+             case 2:
+                 if( strcmp(conversion, "F") == 0 ){ // 문자열이 "F(Friends)"라면
+                     fprintf(write,"\n*FRIENDS LIST*\n");
+                     system_stat = 3; // 다음 case로
+                 }
+                  else{
+                     item_status(item,line);
+                     fprintf(write,"%s: %s\n",item->name, item->data); // 파일에 입력
 
-    run(fp_input,fp_output);
+                     if (error_count == 0 && str_count < 9) {
+                         // 9개의 문자열을 저장
+                         strcpy(str_buffer[str_count], item->name);
+                         str_count++;
+                     } else if (error_count == 0 && str_count == 9) {
+                         // 9개의 문자열을 모두 읽은 경우
+                         int same_count = 1; // 반복되는 문자열 개수
+                         for (int i = 1; i < 9; i++) {
+                             if (strcmp(str_buffer[i], str_buffer[i-1]) == 0) {
+                                 same_count++;
+                             } else {
+                                 same_count = 1;
+                             }
+                             if (same_count >= 6) {
+                                 // 오류 복구
+                                 strcpy(error_str, str_buffer[i]);
+                                 strcpy(error_data, item->data);
+                                 error_count++;
+                                 break;
+                             }
+                         }
+                         // 마지막 문자열까지 모두 같은 경우
+                         if (same_count >= 6 && error_count > 0) {
+                             fprintf(write, "아이템 구조체 오류 복구:\n");
+                             fprintf(write, "반복되는 문자열: %s\n", error_str);
+                             fprintf(write, "반복되는 데이터: %s\n", error_data);
+                             error_count = 0; // 오류 복구 완료
+                         }
+                         // 첫 번째 문자열과 다른 경우
+                         if (strcmp(str_buffer[0], item->name) != 0) {
+                             strcpy(str_buffer[0], str_buffer[8]);
+                             str_count = 1;
+                         }
+                     }
+                 }
+                 break;
+             case 3:
+                 if( strcmp(conversion, "D") == 0 ){ // 문자열이 "D(Description)"라면
+                     fprintf(write,"*DESCRIPTION*\n");
+                     system_stat = 4; // 다음 케이스로
+                 }
+                 else{
+                     fprintf(write,"FRIEND%d %s: %s\n",friend_num+1,friend[friend_menu],conversion);
+                     friend_menu = (friend_menu + 1) % 4;
 
-    fclose(fp_input);
-    fclose(fp_output);
+                     if(friend_menu == 0){ // 메뉴가 4번 파일에 입력되면
+                         friend_num++; // 친구 수 증가
+                         fprintf(write,"\n"); // 줄바꿈
+                     }
+                 }
+                 break;
+             case 4:
+                 add_str_arr(line); // 문자열 배열에 문자열 저장 및 오류 검출
+                 //printf("%s",str_buf[0]);
+                 if( str_arr_num == 8 ) // 8번이 되면
+                     fprintf(write,"%s", str_buf[num]); // num은 본인이 지정
+                 break;
+         }
+     }
+ }
+ int main(int argc, char* argv[]){
+     // putty에서 ./decoder.out encoded_data1.modified result1.txt 이런식으로 입력하면
+     // argv[1] = encoded_data1.modified
+     // argv[2] = result1.txt
+     // 로 해당 배열에 값이 들어가게 된다.
+     // 각각 input_txt, output_text 문자열로 저장
+     strcpy(input_txt, argv[1]);
+     strcpy(output_txt, argv[2]);
+     printf("[input file]: %s\n", input_txt);
+     printf("[output file]: %s\n", output_txt);
 
-    return 0;
-}
+     // input_txt는 읽기 모드(mode: r)
+     FILE* fp_input = fopen(input_txt, "r");
+     if (fp_input == NULL){
+         printf("%s 을(를) 열 수 없습니다. 디코딩을 종료합니다.\n", input_txt);
+         exit(0);
+     }
+     // output_txt는 쓰기 모드(mode: w)
+     FILE* fp_output = fopen(output_txt, "w");
+     if (fp_output == NULL){
+         printf("%s 을(를) 열 수 없습니다. 디코딩을 종료합니다.\n", output_txt);
+         exit(0);
+     }
+
+     run(fp_input,fp_output);
+
+     fclose(fp_input);
+     fclose(fp_output);
+
+     return 0;
+ }
+
