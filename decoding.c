@@ -53,6 +53,13 @@ void user_info(char* user[]){ // 유저 상태 초기화
       char token1[10];
       char token2[10];
       int index = 0;
+			
+			int error_count = 0; // 아이템 구조체의 오류 개수
+     	char error_str[256]; // 오류 발생 시 반복되는 문자열
+     	char error_data[256]; // 오류 발생 시 반복되는 데이터
+
+			char str_buffer[9][256];
+     	int str_count = 0; // 현재까지 읽은 문자열의 개수
 
       int i=0;
 			
