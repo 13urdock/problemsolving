@@ -7,8 +7,10 @@ char output_txt[50];
 
 char line[1005];
 char str_buf[1001][1001]; // 1줄에 1글자씩 1000자 || 1줄에 1000자
+char desc_buf[1001][1001]; // 1줄에 1글자씩 1000자 || 1줄에 1000자
 
 int str_arr_num = 0;
+int desc_arr_num = 0;
 int system_stat = 0; // system 상태, switch문 case
 
 typedef struct{
@@ -42,18 +44,20 @@ void add_str_arr(char str[2000]){
     //printf("%s\n", str);
     str[len-1] = '\0'; // 맨끝 \n 삭제
 
-    token = strtok(str, "/"); // 토큰 단위로
+    token = strtok(str, "/\n"); // 토큰 단위로
     while( (token != NULL) && (i < 9) ){
         strcpy(str_buf[i],token);
         token = strtok(NULL, "/");
         i++;
     }
-    /*for(int i=0; i<9; i++)
+    /*
+    for(int i=0; i<9; i++)
         printf("%d: %s\n",i,str_buf[i]);
+
+    printf("\n");
     */
-    //printf("\n");
 }
-int check_origin_data(){ // 다수결
+int check_origin_data(char str_buf[][1001]){ // 다수결
     int count[9] = {0,}; // str_buf가 다른 문자열과 일치하는지 count하는 배열
 
     int max = 0;
@@ -66,7 +70,8 @@ int check_origin_data(){ // 다수결
             }
         }
     }
-    /*for(int i=0; i<9; i++){
+    /*
+    for(int i=0; i<9; i++){
         printf("%d ",count[i]);
     }
     printf("\n");
@@ -114,7 +119,7 @@ void item_status(Item *item,char str[2000]){
     free(nums);
     free(strs);
 }
-void shift_left(){
+void shift_left(char str_buf[][1001]){
     int len = 0;
 
     for(int i = 0; i < 9; i++){
@@ -123,14 +128,25 @@ void shift_left(){
         for(int j = 1; j < len; j++){ // '/'든 변형된 문자든 한글자씩 앞으로 shift
             str_buf[i][j-1] = str_buf[i][j];
         }
-        str_buf[i][len-1] = '\0'; // 문자열의 끝의 개행문자를 '\0'으로
+        str_buf[i][len-2] = '\0'; // 문자열의 끝의 개행문자를 '\0'으로
     }
 //  for(int i=0; i<9; i++)
 //      printf("%s\n",str_buf[i]);
 }
 void add_desc_arr(char str[2000]){
-    strcpy(str_buf[str_arr_num],str); // 버퍼에 문자열 저장
-    str_arr_num = (str_arr_num+1) % 9;
+    strcpy(desc_buf[desc_arr_num],str); // 버퍼에 문자열 저장
+    desc_arr_num = (desc_arr_num+1) % 9;
+}
+int is_include_slash(char str[2000]){
+    int slash_count = 0;
+    int len = strlen(str);
+    for(int i=0; i<len; i++){
+        if( str[i] == '/' )
+            slash_count++; // 슬래시 수 세기
+    }
+    if( slash_count == 0 )
+        return 0;
+    return 1;
 }
 void run(FILE *read, FILE *write){
     char *user[2000]; // 유저 상태 기록
@@ -145,7 +161,7 @@ void run(FILE *read, FILE *write){
     int friend_menu = 0; // 친구 메뉴 수
 
     int num = 0; // 검사 후 나온 올바른 배열 번호
-
+    int flag = 0;
     if (read == NULL || write == NULL){
         printf("파일을 열 수 없습니다.\n");
         exit(0);
@@ -154,13 +170,17 @@ void run(FILE *read, FILE *write){
     friend_info(friend); // 친구 상태 배열에 기록 (ID: NAME: 등)
 
     while (fgets(line, sizeof(line), read)){ // 한줄을 리턴
-        //printf("%s",line);
-        add_str_arr(line); // 문자열 배열에 저장
-        num = check_origin_data();  // 원본 데이터를 찾는 인덱스
-        strcpy(conversion, str_buf[num]); // 변환된 문자열 옮겨담기
-        //fprintf(write,"%s\n", str_buf[num]); // 원본 데이터 파일에 입력
-
-    //  printf("%s",str_buf[num]);
+        if( is_equal(line,"\n") ){ // "\n"가 아니라면
+            continue;
+        }
+        if( !is_include_slash(line) ){ // 슬래시가 없다면
+            continue;
+        }
+        if(flag == 0){ // flag가 1이 되면 desc배열에 저장
+            add_str_arr(line); // 문자열 추가
+            num = check_origin_data(str_buf); // 원본 데이터를 찾는 인덱스
+            strcpy(conversion, str_buf[num]); // 변환된 문자열 옮겨담기
+        }
         switch(system_stat){
             case 0:
                 if( is_equal(conversion, "U") ){ // 문자열이 "U(User)"라면
@@ -194,6 +214,7 @@ void run(FILE *read, FILE *write){
                 if( is_equal(conversion, "D") ){ // 문자열이 "D(Description)"라면
                     fprintf(write,"*DESCRIPTION*\n");
                     system_stat = 4; // 다음 케이스로
+                    flag = 1; // desc_arr에 저장
                 }
                 else{
                     fprintf(write,"FRIEND%d %s: %s\n",friend_num+1,friend[friend_menu],conversion);
@@ -208,10 +229,10 @@ void run(FILE *read, FILE *write){
             case 4:
                 add_desc_arr(line); // 문자열 배열에 문자열 저장
                 //printf("%s",str_buf[0]);
-                if( str_arr_num == 0 ){ // 9번,즉 다시 0번이 되면
-                    shift_left(); // str_buf 한칸씩 왼쪽으로 밀기
-                    num = check_origin_data();  // 원본 데이터를 찾는 인덱스
-                    fprintf(write,"%s\n", str_buf[num]); // 원본 데이터 파일에 입력
+                if( desc_arr_num == 0 ){ // 9번,즉 다시 0번이 되면
+                    shift_left(desc_buf); // str_buf 한칸씩 왼쪽으로 밀기
+                    num = check_origin_data(desc_buf);  // 원본 데이터를 찾는 인덱스
+                    fprintf(write,"%s\n", desc_buf[num]); // 원본 데이터 파일에 입력
                 }
                 break;
         }
