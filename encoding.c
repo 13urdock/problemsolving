@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define MAX_LEN 1005
 
 int system_stat;
@@ -62,16 +63,18 @@ void repeat_9_decription(char str[2000], FILE* out){
         }
         count++;
     }
+    /*
     // 줄바꿈 5번
     for(int i=0; i<5; i++){
         fputs("\n", out);
-    }
+    }*/
 }
 
 // 앞에 데이터를 빼고 ": " 뒷부분인 유저 data만 문자열로 만드는 함수
 int make_user_word(char string[MAX_LEN], char ret[MAX_LEN]) {
     char temp[MAX_LEN];
     int len = strlen(string);
+
     // 첫번째에 개행문자 '\n'가 있으면 데이터가 없다고 판단
     if (string[0] == 10) {
         // 문자가 없다는 뜻으로 배열의 첫번째에 '\0' 입력
@@ -167,75 +170,75 @@ int main(int argc, char* argv[]) {
 
         // 각 항목별로 구분하기 위한 stat변수 동작
         switch (system_stat) {
-        case 0: // "*USER STATUS*\n" 를 만나면(개행문자까지 check)
-            if (strcmp("*USER STATUS*\n", line) == 0) {
-                // 항목을 구분하는 함수
-                // U(User을 의미). U가 9번 반복
-                divide_contents("U", fp_output);
-                // 다음 1번으로 이동
-                system_stat = 1;
-            }
-            break;
-        case 1:
-            // "*ITEMS*\n" 를 만나면
-            if (strcmp("*ITEMS*\n", line) == 0) {
-                // 항목을 구분하는 함수
-                // I(Items을 의미). I가 9번 반복
-                divide_contents("I", fp_output);
-                // 다음 2번으로 이동
-                system_stat = 2;
-            }
-            // 위의 조건이 아니라면
-            else {
-                // 6개의 유저정보에 해당이 되면 아래 함수들 실행
-                if (user_stat <= 6) {
-                    // 중간에 위치한 ": " 이후의 데이터만 추출
-                    // 문자열을 자르는 함수 실행
-                    make_user_word(line, word);
-                    // 위에서 문자열을 9번 반복
-                    repeat_9(word, fp_output);
-                    // 유저정보는 6개이므로 6번만 동작하기 위함
-                    user_stat++;
+            case 0: // "*USER STATUS*\n" 를 만나면(개행문자까지 check)
+                if (strcmp("*USER STATUS*\n", line) == 0) {
+                    // 항목을 구분하는 함수
+                    // U(User을 의미). U가 9번 반복
+                    divide_contents("U", fp_output);
+                    // 다음 1번으로 이동
+                    system_stat = 1;
                 }
-            }
-            break;
-        case 2:
-            // "*FRIENDS LIST*\n" 를 만나면
-            if (strcmp("*FRIENDS LIST*\n", line) == 0) {
-                // 항목을 구분하는 함수
-                // F(Items을 의미). F가 9번 반복
-                divide_contents("F", fp_output);
-                // 다음 3으로 이동
-                system_stat = 3;
-            }
-            else {
-                // 아이템 목록에 대한 문자열 가공
-                make_item_word(line, word);
+                break;
+            case 1:
+                // "*ITEMS*\n" 를 만나면
+                if (strcmp("*ITEMS*\n", line) == 0) {
+                    // 항목을 구분하는 함수
+                    // I(Items을 의미). I가 9번 반복
+                    divide_contents("I", fp_output);
+                    // 다음 2번으로 이동
+                    system_stat = 2;
+                }
+                // 위의 조건이 아니라면
+                else {
+                    // 6개의 유저정보에 해당이 되면 아래 함수들 실행
+                    if (user_stat <= 6) {
+                        // 중간에 위치한 ": " 이후의 데이터만 추출
+                        // 문자열을 자르는 함수 실행
+                        make_user_word(line, word);
+                        // 위에서 문자열을 9번 반복
+                        repeat_9(word, fp_output);
+                        // 유저정보는 6개이므로 6번만 동작하기 위함
+                        user_stat++;
+                    }
+                }
+                break;
+            case 2:
+                // "*FRIENDS LIST*\n" 를 만나면
+                if (strcmp("*FRIENDS LIST*\n", line) == 0) {
+                    // 항목을 구분하는 함수
+                    // F(Items을 의미). F가 9번 반복
+                    divide_contents("F", fp_output);
+                    // 다음 3으로 이동
+                    system_stat = 3;
+                }
+                else {
+                    // 아이템 목록에 대한 문자열 가공
+                    make_item_word(line, word);
+                    // 위에서 문자열이 가공되서 나오면 9번 반복
+                    repeat_9(word, fp_output);
+                }
+                break;
+            case 3:
+                // "*DESCRIPTION*\n" 를 만나면
+                if (strcmp("*DESCRIPTION*\n", line) == 0) {
+                    // 항목을 구분하기 위한 함수를 실행함. 이번엔 D로 9번 반복
+                    divide_contents("D", fp_output);
+                    // 다음 4로 이동
+                    system_stat = 4;
+                }
+                else {
+                    // 앞의 유저정보와 같은 함수
+                    make_user_word(line, word);
+                    // 위에서 문자열이 가공되서 나오면 9번 반복
+                    repeat_9(word, fp_output);
+                }
+                break;
+            case 4:
+                // 설명 항목에 대한 문자열 가공
+                make_description_word(line, word);
                 // 위에서 문자열이 가공되서 나오면 9번 반복
-                repeat_9(word, fp_output);
-            }
-            break;
-        case 3:
-            // "*DESCRIPTION*\n" 를 만나면
-            if (strcmp("*DESCRIPTION*\n", line) == 0) {
-                // 항목을 구분하기 위한 함수를 실행함. 이번엔 D로 9번 반복
-                divide_contents("D", fp_output);
-                // 다음 4로 이동
-                system_stat = 4;
-            }
-            else {
-                // 앞의 유저정보와 같은 함수
-                make_user_word(line, word);
-                // 위에서 문자열이 가공되서 나오면 9번 반복
-                repeat_9(word, fp_output);
-            }
-            break;
-        case 4:
-            // 설명 항목에 대한 문자열 가공
-            make_description_word(line, word);
-            // 위에서 문자열이 가공되서 나오면 9번 반복
-            repeat_9_decription(word, fp_output);
-            break;
+                repeat_9_decription(word, fp_output);
+                break;
         }
     }
 

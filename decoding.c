@@ -9,8 +9,8 @@ char line[1005];
 char str_buf[1001][1001]; // 1줄에 1글자씩 1000자 || 1줄에 1000자
 char desc_buf[1001][1001]; // 1줄에 1글자씩 1000자 || 1줄에 1000자
 
-int str_arr_num = 0;
-int desc_arr_num = 0;
+int str_arr_num = 0; // 일반 상태 문자열 번호
+int desc_arr_num = 0; // desc 상태 문자열 번호
 int system_stat = 0; // system 상태, switch문 case
 
 typedef struct{
@@ -26,7 +26,7 @@ void user_info(char* user[]){ // 유저 상태 초기화
     user[5] = "MP";
     user[6] = "COIN";
 }
-void friend_info(char* friend[]){ // 유저 상태 초기화
+void friend_info(char* friend[]){ // 친구 상태 초기화
     friend[0] = "ID";
     friend[1] = "NAME";
     friend[2] = "GENDER";
@@ -37,7 +37,16 @@ int is_equal(char str1[1001], char str2[1002]){
         return 1;
     return 0;
 }
-void add_str_arr(char str[2000]){
+int include_slash(char str[2000]){
+    int slash_count = 0;
+    int len = strlen(str);
+    for(int i=0; i<len; i++){
+        if( str[i] == '/' )
+            slash_count++; // 슬래시 수 세기
+    }
+    return slash_count;
+}
+void add_str_arr(char str[2000]){ // str_buf에 문자열 추가
     int i=0;
     char *token;
     int len = strlen(str);
@@ -57,7 +66,7 @@ void add_str_arr(char str[2000]){
     printf("\n");
     */
 }
-int check_origin_data(char str_buf[][1001]){ // 다수결
+int check_origin_data(char str_buf[][1001]){ // str_buf에 추가된 문자 다수결로 출력
     int count[9] = {0,}; // str_buf가 다른 문자열과 일치하는지 count하는 배열
 
     int max = 0;
@@ -135,18 +144,10 @@ void shift_left(char str_buf[][1001]){
 }
 void add_desc_arr(char str[2000]){
     strcpy(desc_buf[desc_arr_num],str); // 버퍼에 문자열 저장
-    desc_arr_num = (desc_arr_num+1) % 9;
-}
-int is_include_slash(char str[2000]){
-    int slash_count = 0;
-    int len = strlen(str);
-    for(int i=0; i<len; i++){
-        if( str[i] == '/' )
-            slash_count++; // 슬래시 수 세기
-    }
-    if( slash_count == 0 )
-        return 0;
-    return 1;
+    /*for(int i=0; i<9; i++)
+        printf("[%d]: %s\n",i,desc_buf[i]);
+    */
+    desc_arr_num = (desc_arr_num+1) % 9; // 0-8번
 }
 void run(FILE *read, FILE *write){
     char *user[2000]; // 유저 상태 기록
@@ -170,13 +171,16 @@ void run(FILE *read, FILE *write){
     friend_info(friend); // 친구 상태 배열에 기록 (ID: NAME: 등)
 
     while (fgets(line, sizeof(line), read)){ // 한줄을 리턴
-        if( is_equal(line,"\n") ){ // "\n"가 아니라면
+        if( is_equal(line,"\n") ){ // "\n"만 있다면
             continue;
         }
-        if( !is_include_slash(line) ){ // 슬래시가 없다면
+        if( is_equal(line,"/\n") ){ // "/"만 있다면
             continue;
         }
         if(flag == 0){ // flag가 1이 되면 desc배열에 저장
+            if( include_slash(line) < 5 ){ // 슬래시가 최소 5번이 없다면
+                continue;
+            }
             add_str_arr(line); // 문자열 추가
             num = check_origin_data(str_buf); // 원본 데이터를 찾는 인덱스
             strcpy(conversion, str_buf[num]); // 변환된 문자열 옮겨담기
@@ -227,12 +231,13 @@ void run(FILE *read, FILE *write){
                 }
                 break;
             case 4:
-                add_desc_arr(line); // 문자열 배열에 문자열 저장
-                //printf("%s",str_buf[0]);
+                add_desc_arr(line); // desc문자열 배열에 문자열 저장
                 if( desc_arr_num == 0 ){ // 9번,즉 다시 0번이 되면
                     shift_left(desc_buf); // str_buf 한칸씩 왼쪽으로 밀기
                     num = check_origin_data(desc_buf);  // 원본 데이터를 찾는 인덱스
                     fprintf(write,"%s\n", desc_buf[num]); // 원본 데이터 파일에 입력
+                    //printf("%s\n",desc_buf[num]);문자열을 ‘/’단위로 잘라서
+                    memset(desc_buf, 0, sizeof(desc_buf)); // 배열 초기화
                 }
                 break;
         }
@@ -263,7 +268,7 @@ int main(int argc, char* argv[]){
         exit(0);
     }
 
-    run(fp_input,fp_output);
+    run(fp_input,fp_output); // 함수 실행
 
     fclose(fp_input);
     fclose(fp_output);
